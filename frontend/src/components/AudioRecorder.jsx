@@ -45,9 +45,11 @@ export default function AudioRecorder({
   streamRef.current = stream;
       chunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream);
+     const mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorderRef.current = mediaRecorder;
+console.log("LIVE AUDIO MIME TYPE:", mediaRecorder.mimeType);
+
+mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
@@ -59,6 +61,8 @@ export default function AudioRecorder({
         const blob = new Blob(chunksRef.current, {
           type: mediaRecorder.mimeType || "audio/webm",
         });
+        console.log("RECORDED BLOB TYPE:", blob.type);
+console.log("RECORDED BLOB SIZE:", blob.size);
 
         if (timerRef.current) {
           clearInterval(timerRef.current);

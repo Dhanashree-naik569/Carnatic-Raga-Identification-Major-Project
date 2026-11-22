@@ -35,3 +35,14 @@ frontend/.env
 # Dataset folders
 backend/dataset/
 Dataset/
+# Production environment files
+frontend/.env.production
+
+# Temporary backup and test files
+*.backup
+*_backup.py
+*_before_*.py
+backend/test_results*.txt
+frontend-source.zip
+
+backend/venv_old/

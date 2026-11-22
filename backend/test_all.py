@@ -1,69 +1,88 @@
-from predict import predict_file
-import glob
-import os
 
-folders = glob.glob(r".\dataset\*")
+import os
+import glob
+from collections import defaultdict
+
+from predict import predict_file, model_available
+
+EXTENSIONS = (".wav", ".mp3", ".flac", ".ogg", ".m4a")
+
+if not model_available():
+    print("ERROR: Saved model could not be loaded.")
+    raise SystemExit(1)
+
+folders = sorted(glob.glob(os.path.join("dataset", "*")))
 
 total = 0
 correct = 0
 failed = 0
+results = defaultdict(lambda: {"total": 0, "correct": 0, "failed": 0})
 
-print("\n========== DATASET TEST ==========\n")
+print("\n========== FULL DATASET TEST ==========\n")
 
-for d in folders:
-
-    if not os.path.isdir(d):
+for folder in folders:
+    if not os.path.isdir(folder):
         continue
 
-    actual_raga = os.path.basename(d)
+    actual = os.path.basename(folder)
 
-    files = glob.glob(os.path.join(d, "*.wav"))[:5]
+    files = sorted(
+        f for f in glob.glob(os.path.join(folder, "*"))
+        if os.path.isfile(f)
+        and os.path.splitext(f)[1].lower() in EXTENSIONS
+    )
 
-    for f in files:
-
+    for path in files:
         total += 1
+        results[actual]["total"] += 1
 
-        print("\n----------------------------------------")
-        print(f"Actual Raga : {actual_raga}")
-        print(f"File        : {os.path.basename(f)}")
+        print(f"\nActual: {actual} | File: {os.path.basename(path)}")
 
         try:
+            result = predict_file(path)
+            if "error" in result:
+                raise RuntimeError(result["error"])
 
-            result = predict_file(f)
-
-            prediction = result["prediction"]
+            predicted = result["prediction"]
             confidence = result["confidence"]
 
-            print(f"Prediction  : {prediction}")
-            print(f"Confidence  : {confidence}%")
+            print(f"Predicted: {predicted} | Score: {confidence}%")
 
-            if prediction.lower() == actual_raga.lower():
+            if predicted.casefold() == actual.casefold():
                 correct += 1
-                print("Result      : CORRECT")
+                results[actual]["correct"] += 1
+                print("Result: CORRECT")
             else:
-                print("Result      : WRONG")
+                print("Result: WRONG")
 
-        except Exception as e:
-
+        except Exception as error:
             failed += 1
+            results[actual]["failed"] += 1
+            print(f"Result: FAILED | {error}")
 
-            print("Result      : FAILED")
-            print(f"Reason      : {e}")
+print("\n========== PER-RAGA RESULTS ==========")
+print(f"{'Raga':20} {'Correct':>8} {'Tested':>8} {'Accuracy':>10}")
 
-print("\n========================================")
-print("FINAL RESULTS")
-print("========================================")
-
-print(f"Total files tested : {total}")
-print(f"Correct            : {correct}")
-print(f"Failed             : {failed}")
+for raga, data in sorted(results.items()):
+    tested = data["total"] - data["failed"]
+    accuracy = data["correct"] / tested * 100 if tested else 0
+    print(
+        f"{raga:20} {data['correct']:>8} "
+        f"{tested:>8} {accuracy:>9.2f}%"
+    )
 
 successful = total - failed
 
-if successful > 0:
-    accuracy = correct / successful * 100
-    print(f"Accuracy           : {accuracy:.2f}%")
-else:
-    print("Accuracy           : N/A")
+print("\n========== FINAL RESULTS ==========")
+print(f"Total files found : {total}")
+print(f"Correct           : {correct}")
+print(f"Wrong             : {successful - correct}")
+print(f"Failed            : {failed}")
 
-print("========================================")
+if successful:
+    print(f"Accuracy          : {correct / successful * 100:.2f}%")
+else:
+    print("Accuracy          : N/A")
+
+print("\nNote: This tests the saved ML model on dataset recordings.")
+print("It is not an independent test of unseen recordings.")

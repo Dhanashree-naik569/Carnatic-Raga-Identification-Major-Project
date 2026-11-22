@@ -59,7 +59,7 @@ MODEL_RAGA_SWARAS = {
     "Anandabhairavi": [0, 2, 3, 5, 7, 9, 10],
 
     "Bhairavi": [
-        0, 1, 2, 3, 5, 7, 8, 9, 10
+    0, 2, 3, 5, 7, 8, 9, 10
     ],
 
     "Bilahari": [
@@ -378,7 +378,6 @@ def identify_raga(
             + 0.5 * ml_component
         )
 
-
         combined.append(
             {
                 "raga": name,
@@ -410,31 +409,23 @@ def identify_raga(
     )
 
 
+        # ========================================================
+    # 10. NORMALIZE ALL RAGA SCORES
     # ========================================================
-    # 10. NORMALIZE TOP-K CONFIDENCES
-    # ========================================================
-
-    top_results = combined[
-        :top_k
-    ]
 
     total = sum(
-        item["confidence"]
-        for item in top_results
+        max(0.0, item["confidence"])
+        for item in combined
     )
 
-    total = total or 1.0
+    if total > 0:
+        for item in combined:
+            item["confidence"] = round(
+                max(0.0, item["confidence"]) / total * 100,
+                2,
+            )
 
-
-    for item in top_results:
-
-        item["confidence"] = round(
-            item["confidence"]
-            / total
-            * 100,
-            2,
-        )
-
+    top_results = combined[:top_k]
 
     # ========================================================
     # 11. BUILD RESPONSE

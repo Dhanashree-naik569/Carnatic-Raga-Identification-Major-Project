@@ -22,7 +22,7 @@ SILENCE_RMS_THRESHOLD = 0.008
 MIN_AUDIO_SECONDS = 0.5
 
 # Minimum amount of detected pitched/voiced content.
-MIN_VOICED_RATIO = 0.45
+MIN_VOICED_RATIO = 0.25
 MIN_VOICED_FRAMES = 10
 
 
@@ -322,7 +322,7 @@ def validate_audio(y, sr):
         )
 
         # Completely chaotic pitch detection is usually noise.
-        if pitch_std > 18:
+        if pitch_std > 22:
             print(
                 "Result: EXCESSIVE PITCH VARIATION"
             )
